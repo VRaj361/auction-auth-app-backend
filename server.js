@@ -112,7 +112,6 @@ app.get("/api/inquiry-status/all", async (req, res) => {
 
   try {
     const statuses = await InquiryStatus.find({ userId });
-    console.log(statuses);
 
     const detailedStatuses = await Promise.all(
       statuses.map(async (status) => {

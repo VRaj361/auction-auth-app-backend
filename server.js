@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -10,9 +11,8 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// mongoose.connect(`${process.env.MONGO_CONNECTION_URL}dashboardAuth`);
 mongoose.connect(
-  "mongodb+srv://vrajpatel2719:5MR847lALFcP3Zno@cluster00.dcmcces.mongodb.net/?retryWrites=true&w=majority&appName=cluster00/dashboardAuth",
+  process.env.MONGOURL + 'dashboardAuth',
   {
     useNewUrlParser: true,
     useUnifiedTopology: true,

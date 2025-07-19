@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const User = require("./models/User");
 const Inquiry = require("./models/Inquiry");
 const InquiryStatus = require("./models/InquiryStatus");
+const Query = require('./models/Query');
 
 const app = express();
 app.use(cors());
@@ -14,8 +15,8 @@ app.use(bodyParser.json());
 mongoose.connect(
   process.env.MONGOURL + 'dashboardAuth',
   {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
   }
 );
 
@@ -128,4 +129,32 @@ app.get("/api/inquiry-status/all", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 });
+
+app.post("/api/queries", async (req, res) => {
+  try {
+    const { userId, title, description } = req.body;
+    if (!userId || !title || !description) {
+      return res.json({ success: false, message: "Missing fields." });
+    }
+    const queryDoc = await Query.create({ userId, title, description });
+    res.json({ success: true, query: queryDoc });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: "Failed to save query." });
+  }
+});
+
+app.get("/api/queries", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const q = await Query.find(userId ? { userId } : {}).sort({
+      createdAt: -1,
+    });
+    res.json({ success: true, queries: q });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: "Failed to fetch queries." });
+  }
+});
+
 app.listen(8000, () => console.log("Server running on http://localhost:8000"));

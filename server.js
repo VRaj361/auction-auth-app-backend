@@ -9,6 +9,10 @@ const InquiryStatus = require("./models/InquiryStatus");
 const Query = require('./models/Query');
 const CompanyChangeRequest = require('./models/CompanyChangeRequest');
 const turnoverUpload = require('./multerTurnover');
+const PurchaseOrder = require('./models/PurchaseOrder');
+const PurchaseQuery = require('./models/PurchaseQuery');
+const PaymentHistory = require('./models/PaymentHistory');
+
 
 
 const app = express();
@@ -362,6 +366,116 @@ app.get('/api/company-details/requests/:userId', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.json({ success: false, message: 'Server error.' });
+  }
+});
+
+// ------------------------------------------------------------------
+// CREATE Purchase Order (admin / seed use)
+// Body: { purchaseNumber, title, description, status? }
+// ------------------------------------------------------------------
+app.post('/api/purchase-orders', async (req, res) => {
+  try {
+    const { purchaseNumber, title, description, status } = req.body;
+    if (!purchaseNumber || !title) {
+      return res.json({ success: false, message: 'purchaseNumber & title required.' });
+    }
+
+    const po = await PurchaseOrder.create({
+      purchaseNumber,
+      title,
+      description,
+      status,
+    });
+
+    res.json({ success: true, purchaseOrder: po });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to create purchase order.' });
+  }
+});
+
+// ------------------------------------------------------------------
+// GET All Purchase Orders (optional filter by userId in future)
+// ------------------------------------------------------------------
+app.get('/api/purchase-orders', async (req, res) => {
+  try {
+    // const { userId } = req.query; // for future scoping
+    const pos = await PurchaseOrder.find().sort({ createdAt: -1 });
+    res.json({ success: true, purchaseOrders: pos });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to fetch purchase orders.' });
+  }
+});
+
+// ------------------------------------------------------------------
+// GET One Purchase Order by id
+// ------------------------------------------------------------------
+app.get('/api/purchase-orders/:id', async (req, res) => {
+  try {
+    const po = await PurchaseOrder.findById(req.params.id);
+    if (!po) return res.json({ success: false, message: 'Purchase order not found.' });
+    res.json({ success: true, purchaseOrder: po });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to fetch purchase order.' });
+  }
+});
+
+app.post('/api/purchaseQueries', async (req, res) => {
+  try {
+    const { purchaseOrderId, title, description, type } = req.body;
+    if (!purchaseOrderId || !title || !description) {
+      return res.json({ success: false, message: 'Missing required fields' });
+    }
+
+    const query = await PurchaseQuery.create({
+      purchaseOrderId,
+      title,
+      description,
+      type: type || 'general'
+    });
+
+    res.json({ success: true, query });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to create query' });
+  }
+});
+
+app.post('/api/payments', async (req, res) => {
+  try {
+    const { userId, purchaseOrderId, qtyNumber, amount } = req.body;
+    if (!purchaseOrderId || qtyNumber == null || amount == null) {
+      return res.json({ success: false, message: 'Missing required fields' });
+    }
+    const payment = await PaymentHistory.create({
+      userId,
+      purchaseOrderId,
+      qtyNumber,
+      amount,
+    });
+    res.json({ success: true, payment });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to save payment' });
+  }
+});
+
+// Get history
+app.get('/api/payments/history', async (req, res) => {
+  try {
+    const { purchaseOrderId, userId } = req.query;
+    if (!purchaseOrderId) {
+      return res.json({ success: false, message: 'purchaseOrderId required' });
+    }
+    const filter = { purchaseOrderId };
+    if (userId) filter.userId = userId;
+    const history = await PaymentHistory.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, history });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Failed to load payment history' });
   }
 });
 
